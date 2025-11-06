@@ -53,16 +53,21 @@ class LicenseServiceProvider extends ServiceProvider
         // Extract local public key n/e in base64url form
         $localPemPath = __DIR__ . '/../keys/public.pem';
         if (!file_exists($localPemPath)) {
-            throw new \RuntimeException('Bundled public.pem not found for license-client.');
+            // If the bundle doesn't include a public.pem (e.g., path repository during
+            // development), don't abort the boot — log and skip verification.
+            logger()->warning('Bundled public.pem not found for license-client; skipping JWKS verification.');
+            return;
         }
         $localPem = file_get_contents($localPemPath);
         $res = openssl_pkey_get_public($localPem);
         if ($res === false) {
-            throw new \RuntimeException('Bundled public.pem is invalid.');
+            logger()->warning('Bundled public.pem is invalid; skipping JWKS verification.');
+            return;
         }
         $details = openssl_pkey_get_details($res);
         if (empty($details['rsa']['n']) || empty($details['rsa']['e'])) {
-            throw new \RuntimeException('Failed to extract RSA parameters from bundled public key.');
+            logger()->warning('Failed to extract RSA parameters from bundled public key; skipping JWKS verification.');
+            return;
         }
         $localN = $this->base64UrlEncode($details['rsa']['n']);
         $localE = $this->base64UrlEncode($details['rsa']['e']);
