@@ -20,6 +20,9 @@ class LicenseServiceProvider extends ServiceProvider
             __DIR__ . '/../config/license-client.php' => config_path('license-client.php'),
         ], 'license-client-config');
 
+        // Load package views (embedded, not publishable) so blocked page is always available
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'license-client');
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 Console\MakeLicenseServerCommand::class,
