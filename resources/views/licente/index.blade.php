@@ -49,28 +49,30 @@
             @php
                 $isManual = isset($license['data']['issued_by_manual_upload']) && $license['data']['issued_by_manual_upload'];
                 $isValid = isset($license['data']['valid']) && $license['data']['valid'];
+                $isPending = isset($license['data']['pending']) && $license['data']['pending'];
             @endphp
 
-            @if ($isManual && ! $isValid)
-                <div class="alert alert-warning">
-                    Licența a fost instalată manual local — trebuie verificată la autoritate.
-                </div>
+            @if ($isValid)
+                <div class="alert alert-success">Licența este instalată și validă.</div>
+            @elseif ($isPending)
+                <div class="alert alert-warning">Licența a fost trimisă spre aprobare și este în așteptare.</div>
                 <form method="POST" action="{{ route('license-client.licente.verify') }}" class="d-inline">
                     @csrf
-                    <button type="submit" class="btn btn-primary">Verifică la autoritate</button>
+                    <button type="submit" class="btn btn-primary">Re-verifică la autoritate</button>
+                </form>
+                <form method="POST" action="{{ route('license-client.licente.destroy') }}" class="d-inline ms-2">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Șterge fișierul local de licență?')">Șterge licența</button>
+                </form>
+            @else
+                <div class="alert alert-danger">Licența instalată nu este validă. Introduceți o licență nouă mai jos și folosiți butonul de verificare online.</div>
+                <form method="POST" action="{{ route('license-client.licente.destroy') }}" class="d-inline ms-2">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-secondary" onclick="return confirm('Șterge fișierul local de licență?')">Șterge licența curentă</button>
                 </form>
             @endif
-
-            <form method="POST" action="{{ route('license-client.licente.verify') }}" class="d-inline">
-                @csrf
-                <button type="submit" class="btn btn-primary" @if(!empty($isValid)) disabled title="Licența este validă și nu poate fi verificată manual" @endif>Verifică licența</button>
-            </form>
-
-            <form method="POST" action="{{ route('license-client.licente.destroy') }}" class="d-inline ms-2">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-danger" @if(!empty($isValid)) disabled title="Licența este validă și nu poate fi ștersă din interfață" onclick="return false;" @else onclick="return confirm('Șterge fișierul local de licență?')" @endif>Șterge licența</button>
-            </form>
         </div>
     @endif
 
@@ -78,18 +80,15 @@
 
     <h3>Instalează manual o licență</h3>
 
-    @if(!empty($isValid))
-        <div class="alert alert-info">O licență validă este deja instalată. Dacă vrei să o înlocuiești, mai întâi șterge fișierul de licență sau dezactivează licența curentă.</div>
-    @else
-        <form method="POST" action="{{ route('license-client.licente.upload') }}" class="mb-3">
-            @csrf
-            <div class="mb-2">
-                <label class="form-label">Cheie de licență (paste)</label>
-                <input name="license_key" class="form-control" placeholder="Introduceți cheie de licență">
-            </div>
-            <button type="submit" class="btn btn-primary">Salvează și verifică</button>
-        </form>
-    @endif
+    {{-- Un singur formular de upload+verificare: dacă există licență validă, îl dezactivăm. --}}
+    <form method="POST" action="{{ route('license-client.licente.upload') }}" class="mb-3">
+        @csrf
+        <div class="mb-2">
+            <label class="form-label">Cheie de licență (paste)</label>
+            <input name="license_key" class="form-control" placeholder="Introduceți cheie de licență" @if(!empty($isValid)) disabled @endif>
+        </div>
+        <button type="submit" class="btn btn-primary" @if(!empty($isValid)) disabled title="Licența este validă și nu poate fi înlocuită" @endif>Verifică și instalează</button>
+    </form>
 
 </div>
 @endsection
