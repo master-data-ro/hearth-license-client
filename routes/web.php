@@ -15,4 +15,11 @@ Route::group(['middleware' => ['web']], function () {
 
     Route::delete('/licente', '\\Hearth\\LicenseClient\\Controllers\\LicenseManagementController@destroy')
         ->name('license-client.licente.destroy');
+    
+        // Diagnostic UI to test authority verification without persisting
+        Route::get('/licente/diagnostic', '\\Hearth\\LicenseClient\\Controllers\\LicenseManagementController@diagnostic')
+            ->name('license-client.licente.diagnostic');
+
+        Route::post('/licente/diagnostic', '\\Hearth\\LicenseClient\\Controllers\\LicenseManagementController@diagnosticRun')
+            ->name('license-client.licente.diagnostic.run');
 });
