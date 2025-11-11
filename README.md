@@ -49,16 +49,19 @@ php artisan make:license-server LICENTA-TA
 
 Acest flux asigură că doar licențele validate de autoritate pot debloca aplicația, iar orice modificare locală este detectată și blocată.
 
-## Diagramă flux licențiere
+## Diagramă flux licențiere (textuală, compatibilă cu GitHub):
 
-```mermaid
-graph TD;
-    A[Client: Comandă/Interfață] --&gt;|Trimite cheie + domeniu| B(Autoritate: hearth.master-data.ro)
-    B --&gt;|Răspuns: valid/pending/invalid + semnătură| A
-    A --&gt;|Verifică semnătură + salvează local| C[Fișier licență criptat]
-    C --&gt;|Verificare la fiecare request| D[Middleware enforcement]
-    D --&gt;|Permite acces doar dacă licența e validă| E[Aplicație Laravel]
-```
+1. **Clientul** (comandă/Interfață): Trimite cheie + domeniu către autoritate
+2. **Autoritatea** (hearth.master-data.ro): Răspunde cu status (valid/pending/invalid) + semnătură
+3. **Clientul**: Verifică semnătura, salvează local fișierul de licență criptat
+4. **Middleware**: Verifică la fiecare request dacă licența este validă
+5. **Aplicația Laravel**: Permite acces doar dacă licența este validă
+
+Flux simplificat:
+
+Client → Autoritate → Client → Middleware → Aplicație
+
+- Cerere licență   →   Răspuns semnat   →   Salvare locală   →   Enforcement   →   Acces
 
 ## Detalii suplimentare
 
