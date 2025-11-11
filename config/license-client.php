@@ -26,5 +26,12 @@ return [
 	],
 	// Interval (seconds) to allow remote manifest JWKS fetch timeouts before falling back
 	'remote_timeout' => 5,
+
+	// Authority alert endpoint (relative to authority_url) to receive signed
+	// notifications when a potential fraud or integrity issue is detected.
+	'authority_alert_endpoint' => env('LICENSE_AUTHORITY_ALERT_ENDPOINT', '/api/alert/fraud'),
+
+	// Path to write the signed fingerprint file (relative to storage_path())
+	'fingerprint_file' => env('LICENSE_FINGERPRINT_FILE', 'license-fingerprint.json'),
 ];
 

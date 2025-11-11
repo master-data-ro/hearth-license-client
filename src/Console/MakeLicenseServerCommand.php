@@ -139,7 +139,7 @@ class MakeLicenseServerCommand extends Command
         // give a clearer instruction to retry activation later.
         $mLower = mb_strtolower($serverMessage);
         if (str_contains($mLower, 'nu există') || str_contains($mLower, 'înregistrat') || str_contains($mLower, 'înregistrată')) {
-            $this->line('Notă: licența a fost înregistrată pentru aprobare la autoritate. Încercați reactivarea mai târziu (rulați din nou comanda) după ce administratorul aprobă cererea.');
+            $this->line('Notă: licența a fost înregistrată pentru aprobare la autoritate.');
         }
 
         return 0;

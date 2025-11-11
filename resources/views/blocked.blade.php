@@ -14,9 +14,10 @@
 </head>
 <body>
     <div class="wrap">
-        <h1>Access restricted</h1>
-        <p>{{ $message ?? 'A valid license is required to continue.' }}</p>
-        <div class="hint">If you believe this is an error, contact the site administrator with your license information.</div>
+        <h1>Acces restricționat</h1>
+        <p>{{ $message ?? 'Este necesară o licență valabilă pentru a utiliza această aplicație.' }}</p>
+        <p>Pentru a instala o licență, accesați <a href="/licenta">/licenta</a>.</p>
+        <div class="hint">Dacă credeți că apare această pagină din greșeală, contactați suportul tehnic și furnizați informațiile despre licență.</div>
     </div>
 </body>
 </html>

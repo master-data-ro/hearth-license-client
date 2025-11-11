@@ -14,8 +14,11 @@ class LicenseManagementController extends Controller
         $license = null;
         $error = null;
 
+        $isValid = false;
+        $validUntil = null;
+
         if (!file_exists($path)) {
-            return view('license-client::licente.index', ['license' => null, 'error' => null]);
+            return view('license-client::licente.index', ['license' => null, 'error' => null, 'isValid' => false, 'validUntil' => null]);
         }
 
         try {
@@ -26,12 +29,40 @@ class LicenseManagementController extends Controller
             } else {
                 $decrypted = Encryption::decryptString($wrapper['payload']);
                 $license = json_decode($decrypted, true);
+                // Determine validity: look for common fields
+                $data = $license['data'] ?? [];
+                if (!empty($data)) {
+                    if (array_key_exists('valid', $data)) {
+                        $isValid = (bool) $data['valid'];
+                    }
+
+                    // try various expiry keys
+                    foreach (['expires_at','valid_until','expiry','expires','valid_until_at'] as $k) {
+                        if (!empty($data[$k])) {
+                            try {
+                                $dt = new \DateTime($data[$k]);
+                                $validUntil = $dt->format(DATE_ATOM);
+                                if (empty($isValid)) {
+                                    $isValid = (new \DateTime()) < $dt;
+                                }
+                                break;
+                            } catch (\Throwable $e) {
+                                // ignore parse errors
+                            }
+                        }
+                    }
+                }
             }
         } catch (\Throwable $e) {
             $error = 'Eroare la citirea licenței: ' . $e->getMessage();
         }
 
-        return view('license-client::licente.index', ['license' => $license, 'error' => $error]);
+        return view('license-client::licente.index', [
+            'license' => $license,
+            'error' => $error,
+            'isValid' => $isValid,
+            'validUntil' => $validUntil,
+        ]);
     }
 
     /**
@@ -69,6 +100,29 @@ class LicenseManagementController extends Controller
 
         $key = trim($request->input('license_key'));
 
+        // Prevent overwriting a valid existing license from the UI.
+        $existingPath = storage_path('license.json');
+        if (file_exists($existingPath)) {
+            try {
+                $raw = file_get_contents($existingPath);
+                $wrapper = json_decode($raw, true);
+                if (is_array($wrapper) && !empty($wrapper['payload'])) {
+                    $decrypted = Encryption::decryptString($wrapper['payload']);
+                    $existing = json_decode($decrypted, true);
+                    $existingData = $existing['data'] ?? [];
+                    $existingValid = false;
+                    if (array_key_exists('valid', $existingData)) {
+                        $existingValid = (bool) $existingData['valid'];
+                    }
+                    if ($existingValid) {
+                        return redirect()->route('license-client.licente.index')->with('error', 'O licență validă este deja instalată și nu poate fi suprascrisă din interfață. Ștergeți-o manual mai întâi sau folosiți fluxul de autorizare.');
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore and allow upload if existing is unreadable
+            }
+        }
+
         // Create a minimal license payload and save it encrypted. This allows
         // administrators to paste an authority-provided license key.
         $payload = [
@@ -98,7 +152,23 @@ class LicenseManagementController extends Controller
     {
         $path = storage_path('license.json');
         if (file_exists($path)) {
+            // Prevent deleting a valid installed license from the UI
             try {
+                $raw = file_get_contents($path);
+                $wrapper = json_decode($raw, true);
+                if (is_array($wrapper) && !empty($wrapper['payload'])) {
+                    try {
+                        $decrypted = Encryption::decryptString($wrapper['payload']);
+                        $existing = json_decode($decrypted, true);
+                        $existingData = $existing['data'] ?? [];
+                        if (array_key_exists('valid', $existingData) && $existingData['valid']) {
+                            return redirect()->route('license-client.licente.index')->with('error', 'Licența este validă și nu poate fi ștearsă din interfață.');
+                        }
+                    } catch (\Throwable $e) {
+                        // ignore decryption errors and allow deletion
+                    }
+                }
+
                 unlink($path);
                 return redirect()->route('license-client.licente.index')->with('success', 'Fișierul de licență a fost șters.');
             } catch (\Throwable $e) {
